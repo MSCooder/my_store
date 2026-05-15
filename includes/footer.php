@@ -1,78 +1,163 @@
+<?php
+/**
+ * includes/footer.php
+ * Aura Jewelry - Premium Light Theme Footer
+ */
+?>
 <style>
-        footer {
-            background-color: #050505;
-            color: #444;
-            text-align: center;
-            padding: 40px 20px;
-            margin-top: 50px;
-            border-top: 1px solid #1a1a1a;
-            font-family: 'Courier New', Courier, monospace;
-        }
+    /* Footer Main Styling */
+    .main-footer {
+        background-color: #f9f9f7; /* Soft premium light gray/cream background */
+        padding: 80px 8% 30px;
+        color: #1a1a1a;
+        font-family: 'Poppins', sans-serif;
+        border-top: 1px solid #eeeeee;
+        margin-top: 60px;
+    }
 
-        .footer-content {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+    .footer-wrapper {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 40px;
+        max-width: 1300px;
+        margin: 0 auto;
+    }
 
-        .footer-logo {
-            color: var(--matrix-green, #00ff41);
-            font-weight: bold;
-            font-size: 20px;
-            letter-spacing: 2px;
-            margin-bottom: 10px;
-        }
+    /* Column Headings */
+    .footer-col h4 {
+        font-family: 'Poppins', sans-serif;
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 25px;
+        text-transform: capitalize;
+        letter-spacing: 0.5px;
+    }
 
-        .footer-links {
-            margin: 15px 0;
-        }
+    /* Footer Links */
+    .footer-col ul {
+        list-style: none;
+        padding: 0;
+    }
 
-        .footer-links a {
-            color: #888;
-            text-decoration: none;
-            margin: 0 15px;
-            font-size: 13px;
-            transition: 0.3s;
-        }
+    .footer-col ul li {
+        margin-bottom: 12px;
+    }
 
-        .footer-links a:hover {
-            color: #00ff41;
-        }
+    .footer-col ul li a {
+        text-decoration: none;
+        color: #666666;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        display: inline-block;
+    }
 
-        .copyright {
-            font-size: 12px;
-            margin-top: 20px;
-            color: #333;
-        }
+    .footer-col ul li a:hover {
+        color: #c4a47c; /* Gold Accent */
+        transform: translateX(5px);
+    }
 
-        .neon-line {
-            height: 1px;
-            width: 50px;
-            background-color: #00ff41;
-            margin: 20px auto;
-            box-shadow: 0 0 10px #00ff41;
-        }
-    </style>
+    /* Social Icons Styling */
+    .social-links {
+        display: flex;
+        gap: 12px;
+    }
 
-    <footer>
-        <div class="footer-content">
-            <div class="footer-logo">My STORE</div>
-            <p style="font-size: 14px;">Premium Cyber Hardware & Software Solutions</p>
-            
-            <div class="neon-line"></div>
+    .social-links a {
+        width: 38px;
+        height: 38px;
+        background-color: #1a1a1a;
+        color: #ffffff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 16px;
+        transition: 0.3s ease;
+    }
 
-            <div class="footer-links">
-                <a href="index.php">Home</a>
-                <a href="cart.php">Cart</a>
-                <a href="login.php">Account</a>
-                <a href="#">Privacy Policy</a>
-            </div>
+    .social-links a:hover {
+        background-color: #c4a47c;
+        transform: translateY(-5px);
+    }
 
-            <p class="copyright">
-                &copy; <?php echo date("Y"); ?> My Store. All Rights Reserved. <br>
-                <span style="color: #1a1a1a;">Built with Core PHP & MySQL</span>
-            </p>
+    /* Bottom Copyright Bar */
+    .footer-bottom {
+        max-width: 1300px;
+        margin: 60px auto 0;
+        padding-top: 25px;
+        border-top: 1px solid #e5e5e5;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        color: #999999;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 992px) {
+        .footer-wrapper { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 576px) {
+        .footer-wrapper { grid-template-columns: 1fr; text-align: center; }
+        .social-links { justify-content: center; }
+        .footer-bottom { flex-direction: column; gap: 10px; }
+    }
+</style>
+
+<footer class="main-footer">
+    <div class="footer-wrapper">
+        
+        <div class="footer-col">
+            <h4>Links</h4>
+            <ul>
+                <li><a href="index.php">Home</a></li>
+                <li><a href="shop.php">Products</a></li>
+                <li><a href="privacy.php">Privacy</a></li>
+            </ul>
         </div>
-    </footer>
 
+        <div class="footer-col">
+            <h4>Category</h4>
+            <ul>
+                <li><a href="shop.php?cat=rings">Rings</a></li>
+                <li><a href="shop.php?cat=necklaces">Collections</a></li>
+                <li><a href="shop.php?cat=earrings">Silver</a></li>
+                <li><a href="admin/index.php">Settings</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-col">
+            <h4>Links</h4>
+            <ul>
+                <li><a href="#">Units Guide</a></li>
+                <li><a href="#">Store Locator</a></li>
+                <li><a href="#">Terms</a></li>
+                <li><a href="#">Returns</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-col">
+            <h4>Social Media</h4>
+            <div class="social-links">
+                <a href="#"><i class="fab fa-facebook-f"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-pinterest"></i></a>
+                <a href="#"><i class="fab fa-youtube"></i></a>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="footer-bottom">
+        <p>&copy; <?php echo date("Y"); ?> Aura Jewelry. Designed with Elegance.</p>
+        <p>Privacy Policy | Cookies Settings</p>
+    </div>
+</footer>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<script src="assets/js/main.js"></script>
 </body>
 </html>

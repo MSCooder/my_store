@@ -1,7 +1,18 @@
 <?php
-// Session yahan start krna behtar hai taqy har page pr mil saky
+// includes/header.php
+require_once 'functions.php';
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
+}
+
+// Cart items count calculate karne ka logic
+$cart_count = 0;
+if (isset($_SESSION['cart'])) {
+    $cart_count = count($_SESSION['cart']);
+} elseif (isset($_COOKIE['guest_cart'])) {
+    $cookie_data = json_decode($_COOKIE['guest_cart'], true);
+    $cart_count = is_array($cookie_data) ? count($cookie_data) : 0;
 }
 ?>
 <!DOCTYPE html>
@@ -9,111 +20,185 @@ if (session_status() === PHP_SESSION_NONE) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    
     <style>
         :root {
-            --matrix-green: #00ff41;
-            --dark-bg: #0d0d0d;
-            --card-bg: #1a1a1a;
+            --primary-dark: #1a1a1a;
+            --accent-gold: #c4a47c;
+            --light-gray: #f9f9f9;
+            --border-color: #eee;
         }
 
-        body {
-            background-color: var(--dark-bg);
-            color: var(--matrix-green);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; color: var(--primary-dark); }
 
-        header {
-            background: rgba(13, 13, 13, 0.9);
-            border-bottom: 2px solid var(--matrix-green);
-            padding: 15px 50px;
+        .main-header {
+            width: 100%;
+            background: #fff;
+            padding: 12px 5%;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
             position: sticky;
             top: 0;
             z-index: 1000;
-            box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
         }
 
-        .logo {
-            font-size: 26px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            color: #fff;
-            text-shadow: 0 0 10px var(--matrix-green);
-            text-decoration: none;
-        }
-
-        .nav-links {
+        /* Search Section - Matches Image 11 */
+        .search-container {
             display: flex;
-            gap: 25px;
             align-items: center;
+            background: var(--light-gray);
+            padding: 8px 18px;
+            border-radius: 25px;
+            width: 220px;
         }
-
-        .nav-links a {
-            color: var(--matrix-green);
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 14px;
-            transition: 0.3s;
-            text-transform: uppercase;
-        }
-
-        .nav-links a:hover {
-            color: #fff;
-            text-shadow: 0 0 8px var(--matrix-green);
-        }
-
-        .cart-badge {
-            background: #fff;
-            color: #000;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 12px;
-            margin-left: 5px;
-        }
-
-        .user-welcome {
-            color: #888;
+        .search-container i { color: #888; font-size: 13px; }
+        .search-container input {
+            border: none;
+            background: transparent;
+            margin-left: 10px;
             font-size: 13px;
-            border-left: 1px solid #333;
-            padding-left: 20px;
+            outline: none;
+            width: 100%;
+        }
+
+        /* Logo Section */
+        .logo a { text-decoration: none; color: var(--primary-dark); text-align: center; }
+        .logo h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+        .logo span {
+            font-size: 9px;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            display: block;
+            margin-top: 3px;
+        }
+
+        /* Navigation Links */
+        .nav-links { display: flex; list-style: none; gap: 35px; }
+        .nav-links a {
+            text-decoration: none;
+            color: var(--primary-dark);
+            font-size: 13px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+        }
+        .nav-links a:hover { color: var(--accent-gold); }
+
+        /* Icons Section */
+        .header-icons { display: flex; align-items: center; gap: 25px; }
+        .header-icons a {
+            color: var(--primary-dark);
+            text-decoration: none;
+            font-size: 18px;
+            position: relative;
+        }
+
+        /* Profile Dropdown Logic */
+        .user-menu { position: relative; display: inline-block; }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #fff;
+            min-width: 120px;
+            box-shadow: 0px 8px 16px rgba(0,0,0,0.1);
+            z-index: 1;
+            border-radius: 4px;
+        }
+        .dropdown-content a {
+            color: #333;
+            padding: 10px 15px;
+            text-decoration: none;
+            display: block;
+            font-size: 12px;
+            border-bottom: 1px solid #f1f1f1;
+        }
+        .dropdown-content a:hover { background-color: var(--light-gray); color: var(--accent-gold); }
+        .user-menu:hover .dropdown-content { display: block; }
+
+        /* Cart Badge */
+        .cart-badge {
+            position: absolute;
+            top: -8px;
+            right: -10px;
+            background: var(--accent-gold);
+            color: white;
+            font-size: 9px;
+            width: 17px;
+            height: 17px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        @media (max-width: 992px) {
+            .search-container, .nav-links { display: none; }
         }
     </style>
 </head>
 <body>
 
-<header>
-    <a href="index.php" class="logo">My Store</a>
+<header class="main-header">
     
-    <nav class="nav-links">
-        <a href="index.php">Products</a>
+
+    <div class="logo">
+        <a href="index.php">
+            <h1>Aura</h1>
+            <span>Jewelry</span>
+        </a>
+    </div>
+
+    <nav>
+        <ul class="nav-links">
+            <li><a href="index.php">Home</a></li>
+            <li><a href="shop.php">Shop</a></li>
+            <li><a href="collections.php">Collections</a></li>
+            <li><a href="about.php">About</a></li>
+        </ul>
+    </nav>
+
+    <div class="header-icons">
+        <div class="user-menu">
+            <a href="javascript:void(0)">
+                <i class="fa-regular fa-user"></i>
+            </a>
+            <div class="dropdown-content">
+                <?php if(isset($_SESSION['user_id'])): ?>
+                    <a href="profile.php">My Profile</a>
+                    <?php if($_SESSION['role'] == 'admin'): ?>
+                        <a href="admin/index.php">Admin Panel</a>
+                    <?php endif; ?>
+                    <a href="logout.php" style="color: #d9534f;">Logout</a>
+                <?php else: ?>
+                    <a href="login.php">Login</a>
+                    <a href="register.php">Register</a>
+                <?php endif; ?>
+            </div>
+        </div>
         
         <a href="cart.php">
-            Cart 
-            <span class="cart-badge">
-                <?php 
-                $count = 0;
-                if(isset($_SESSION['cart'])) {
-                    $count = count($_SESSION['cart']);
-                } elseif(isset($_COOKIE['guest_cart'])) {
-                    $cart_data = json_decode($_COOKIE['guest_cart'], true);
-                    $count = count($cart_data);
-                }
-                echo $count;
-                ?>
-            </span>
+            <i class="fa-solid fa-bag-shopping"></i>
+            <?php if($cart_count > 0): ?>
+                <span class="cart-badge"><?php echo $cart_count; ?></span>
+            <?php endif; ?>
         </a>
-
-        <?php if(isset($_SESSION['user_id'])): ?>
-            <span class="user-welcome">Hello, <?php echo htmlspecialchars($_SESSION['username']); ?></span>
-            <a href="logout.php" style="color: #ff4d4d;">Logout</a>
-        <?php else: ?>
-            <a href="login.php">Login</a>
-            <a href="registration.php">Register</a>
-        <?php endif; ?>
-    </nav>
+    </div>
 </header>
+<script src="js/main.js" defer></script>
+</body>
+</html>
