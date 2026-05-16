@@ -7,15 +7,19 @@ include 'includes/header.php';
 // 2. URL se ID get karein
 if (isset($_GET['id'])) {
     $product_id = intval($_GET['id']);
-    $product = getProductById($pdo, $product_id); // functions.php wala function
+    
+    // Database prepared statement taake query safely execute ho
+    $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
+    $stmt->execute([$product_id]);
+    $product = $stmt->fetch();
 
-    // Agar product nahi mila toh shop par bhej dein
+    // Agar product nahi mila toh shop ya home page par bhej dein
     if (!$product) {
-        header("Location: shop.php");
+        header("Location: index.php");
         exit();
     }
 } else {
-    header("Location: shop.php");
+    header("Location: index.php");
     exit();
 }
 ?>
@@ -28,6 +32,7 @@ if (isset($_GET['id'])) {
         display: flex;
         gap: 50px;
         background: #fff;
+        font-family: 'Poppins', sans-serif;
     }
 
     /* Left Side: Images Section */
@@ -38,6 +43,7 @@ if (isset($_GET['id'])) {
         background: #f9f9f9;
         margin-bottom: 15px;
         overflow: hidden;
+        border-radius: 4px;
     }
     .main-img-box img {
         width: 100%;
@@ -54,6 +60,8 @@ if (isset($_GET['id'])) {
         background: #f9f9f9;
         cursor: pointer;
         border: 1px solid #eee;
+        border-radius: 2px;
+        overflow: hidden;
     }
     .thumb img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -73,7 +81,7 @@ if (isset($_GET['id'])) {
     }
     .rating { color: #c4a47c; margin-bottom: 20px; font-size: 14px; }
     
-    .desc-title { font-weight: 600; margin-bottom: 5px; font-size: 14px; }
+    .desc-title { font-weight: 600; margin-bottom: 5px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
     .desc-text { color: #666; font-size: 14px; line-height: 1.6; margin-bottom: 25px; }
 
     /* Selection Options */
@@ -87,6 +95,7 @@ if (isset($_GET['id'])) {
         cursor: pointer;
         font-size: 13px;
         transition: 0.3s;
+        border-radius: 4px;
     }
     .metal-btn.active { background: #c4a47c; color: #fff; border-color: #c4a47c; }
 
@@ -97,6 +106,7 @@ if (isset($_GET['id'])) {
         border: 1px solid #ddd;
         width: fit-content;
         margin-bottom: 30px;
+        border-radius: 4px;
     }
     .qty-btn {
         padding: 8px 15px;
@@ -124,6 +134,7 @@ if (isset($_GET['id'])) {
         font-weight: 600;
         cursor: pointer;
         transition: 0.3s;
+        border-radius: 4px;
     }
     .add-to-cart-btn:hover { background: #1a1a1a; }
 
@@ -136,37 +147,38 @@ if (isset($_GET['id'])) {
 <div class="detail-container">
     <div class="product-gallery">
         <div class="main-img-box">
-            <img src="assets/images/products/<?= $product['image_url'] ?>" id="mainImage" onerror="this.src='https://via.placeholder.com/600x600?text=Jewelry'">
+            <?php 
+                // Fallback architecture for keys
+                $img_src = isset($product['image']) ? $product['image'] : (isset($product['image_url']) ? $product['image_url'] : '');
+                $prod_title = isset($product['name']) ? $product['name'] : (isset($product['title']) ? $product['title'] : 'Fine Jewelry');
+            ?>
+            <img src="<?= htmlspecialchars($img_src) ?>" id="mainImage" onerror="this.src='https://via.placeholder.com/600x600?text=Jewelry'">
         </div>
         <div class="thumb-row">
-            <div class="thumb"><img src="assets/images/products/<?= $product['image_url'] ?>" onclick="changeImg(this.src)"></div>
+            <div class="thumb"><img src="<?= htmlspecialchars($img_src) ?>" onclick="changeImg(this.src)"></div>
             <div class="thumb"><img src="https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?auto=format&fit=crop&w=200" onclick="changeImg(this.src)"></div>
             <div class="thumb"><img src="https://images.unsplash.com/photo-1598560912015-f3776e033967?auto=format&fit=crop&w=200" onclick="changeImg(this.src)"></div>
         </div>
     </div>
 
     <div class="product-details-info">
-        <h1><?= $product['title'] ?></h1>
+        <h1><?= htmlspecialchars($prod_title) ?></h1>
         <div class="price-tag"><?= formatPrice($product['price']) ?></div>
         
         <div class="rating">
-            <i class="fa-solid fa-star"></i>
-            <i class="fa-solid fa-star"></i>
-            <i class="fa-solid fa-star"></i>
-            <i class="fa-solid fa-star"></i>
-            <i class="fa-solid fa-star"></i>
+            <span style="color: #c4a47c;">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
         </div>
 
         <div class="desc-title">Description</div>
         <p class="desc-text">
-            <?= !empty($product['description']) ? $product['description'] : "This exquisite piece is crafted with precision to bring elegance to your collection. Perfect for special occasions or daily luxury." ?>
+            <?= !empty($product['description']) ? htmlspecialchars($product['description']) : "This exquisite piece is crafted with precision to bring elegance to your collection. Perfect for special occasions or daily luxury." ?>
         </p>
 
         <div class="option-group">
             <span class="option-label">Metal</span>
             <div class="metal-options">
-                <button class="metal-btn active">Gold</button>
-                <button class="metal-btn">Silver</button>
+                <button class="metal-btn active" type="button" onclick="selectMetal(this)">Gold</button>
+                <button class="metal-btn" type="button" onclick="selectMetal(this)">Silver</button>
             </div>
         </div>
 
@@ -179,10 +191,12 @@ if (isset($_GET['id'])) {
             </div>
         </div>
 
-        <form action="add_to_cart.php" method="POST">
+        <form action="cart.php" method="POST">
+            <input type="hidden" name="action" value="add">
             <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
             <input type="hidden" name="quantity" id="form-qty" value="1">
-            <button type="submit" class="add-to-cart-btn">Add to Cart</button>
+            <input type="hidden" name="metal" id="form-metal" value="Gold">
+            <button type="submit" class="add-to-cart-btn"> <a href="index.php">Add to Cart</a> </button>
         </form>
     </div>
 </div>
@@ -191,6 +205,13 @@ if (isset($_GET['id'])) {
     // Image Switcher Logic
     function changeImg(src) {
         document.getElementById('mainImage').src = src;
+    }
+
+    // Metal Selection Toggler
+    function selectMetal(element) {
+        document.querySelectorAll('.metal-btn').forEach(btn => btn.classList.remove('active'));
+        element.classList.add('active');
+        document.getElementById('form-metal').value = element.innerText;
     }
 
     // Quantity Counter Logic

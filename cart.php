@@ -1,19 +1,51 @@
 <?php
-// 1. Database aur Header include karein
+// 1. Session start karein taake dynamic cart data read/write ho sakay
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once 'config/db.php';
 require_once 'includes/functions.php';
 include 'includes/header.php';
 
-// Cart data handle karne ka logic (Session ya Cookie se)
-$cart_items = [];
-$subtotal = 0;
+// 2. Incoming 'Add to Cart' POST Request ko Handle karein
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add') {
+    $product_id = intval($_POST['product_id']);
+    $qty = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
+    $metal = isset($_POST['metal']) ? $_POST['metal'] : 'Gold';
 
-// Yeh sirf dummy data hai aapke screenshot ke mutabiq dikhane ke liye
-// Asal mein yahan aapki session/cookie logic chalegi
-$cart_items = [
-    ['id' => 1, 'name' => 'Solstice Necklace', 'price' => 480, 'qty' => 1, 'img' => 'necklace.jpg'],
-    ['id' => 2, 'name' => 'Luna Ring', 'price' => 250, 'qty' => 1, 'img' => 'ring.jpg']
-];
+    if ($qty < 1) $qty = 1;
+
+    // Fetch product details directly from database to prevent price tampering
+    $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
+    $stmt->execute([$product_id]);
+    $product = $stmt->fetch();
+
+    if ($product) {
+        $cart_key = $product_id . '_' . $metal; // Uniquely handle combinations
+
+        if (isset($_SESSION['cart'][$cart_key])) {
+            $_SESSION['cart'][$cart_key]['qty'] += $qty;
+        } else {
+            // Extract the right image property safely
+            $img_path = isset($product['image']) ? $product['image'] : (isset($product['image_url']) ? $product['image_url'] : '');
+            $prod_name = isset($product['name']) ? $product['name'] : (isset($product['title']) ? $product['title'] : 'Jewelry');
+
+            $_SESSION['cart'][$cart_key] = [
+                'id' => $product['id'],
+                'name' => $prod_name,
+                'price' => floatval($product['price']),
+                'qty' => $qty,
+                'image' => $img_path,
+                'metal' => $metal
+            ];
+        }
+    }
+}
+
+// 3. Sync local variables with active session array
+$cart_items = isset($_SESSION['cart']) ? $_SESSION['cart'] : [];
+$subtotal = 0;
 ?>
 
 <style>
@@ -51,22 +83,27 @@ $cart_items = [
         vertical-align: middle;
     }
     .p-info { display: flex; align-items: center; gap: 20px; }
-    .p-info img { width: 80px; height: 80px; object-fit: cover; background: #f9f9f9; }
+    .p-info img { width: 80px; height: 80px; object-fit: cover; background: #f9f9f9; border-radius: 4px; }
+    .p-meta { font-size: 11px; color: #888; display: block; text-transform: uppercase; margin-top: 3px; }
     
-    /* Quantity Selector */
+    /* Quantity Box Setup matching mockup 7.png */
     .qty-box {
         display: flex;
         align-items: center;
         border: 1px solid #ddd;
         width: fit-content;
+        border-radius: 4px;
+        overflow: hidden;
     }
     .qty-box button {
-        background: none;
+        background: #f9f9f9;
         border: none;
         padding: 5px 12px;
         cursor: pointer;
         font-size: 16px;
+        transition: 0.2s;
     }
+    .qty-box button:hover { background: #eee; }
     .qty-box input {
         width: 35px;
         text-align: center;
@@ -75,7 +112,7 @@ $cart_items = [
         outline: none;
     }
 
-    /* Summary Section */
+    /* Summary Block */
     .cart-summary {
         max-width: 350px;
         margin-left: auto;
@@ -106,19 +143,26 @@ $cart_items = [
         margin-top: 25px;
         cursor: pointer;
         transition: 0.3s;
+        border-radius: 4px;
+        display: inline-block;
+        text-decoration: none;
+        text-align: center;
     }
     .checkout-btn:hover { background: #1a1a1a; }
-    .remove-item { color: #999; cursor: pointer; font-size: 18px; transition: 0.3s; }
-    .remove-item:hover { color: #000; }
+    .remove-item { color: #999; cursor: pointer; font-size: 20px; transition: 0.3s; }
+    .remove-item:hover { color: #d9534f; }
+    
+    .empty-cart-msg { text-align: center; padding: 40px 0; color: #666; }
 </style>
 
 <div class="cart-wrapper">
     <h2 class="cart-title">Your Shopping Bag</h2>
 
+    <?php if (!empty($cart_items)): ?>
     <table class="cart-table">
         <thead>
             <tr>
-                <th>Product Image & Name</th>
+                <th>Product Details</th>
                 <th>Price</th>
                 <th>Quantity</th>
                 <th>Total</th>
@@ -126,27 +170,30 @@ $cart_items = [
             </tr>
         </thead>
         <tbody>
-            <?php foreach($cart_items as $item): 
+            <?php foreach($cart_items as $key => $item): 
                 $item_total = $item['price'] * $item['qty'];
                 $subtotal += $item_total;
             ?>
-            <tr>
+            <tr id="row-<?= $key ?>">
                 <td>
                     <div class="p-info">
-                        <img src="https://via.placeholder.com/80?text=Jewelry" alt="<?= $item['name'] ?>">
-                        <span><?= $item['name'] ?></span>
+                        <img src="<?= htmlspecialchars($item['image']) ?>" onerror="this.src='https://via.placeholder.com/80?text=Jewelry'" alt="<?= htmlspecialchars($item['name']) ?>">
+                        <div>
+                            <strong><?= htmlspecialchars($item['name']) ?></strong>
+                            <span class="p-meta">Metal: <?= htmlspecialchars($item['metal']) ?></span>
+                        </div>
                     </div>
                 </td>
-                <td>$<?= $item['price'] ?></td>
+                <td><?= formatPrice($item['price']) ?></td>
                 <td>
                     <div class="qty-box">
-                        <button onclick="updateQty(<?= $item['id'] ?>, -1)">-</button>
-                        <input type="text" value="<?= $item['qty'] ?>" readonly>
-                        <button onclick="updateQty(<?= $item['id'] ?>, 1)">+</button>
+                        <button type="button" onclick="changeQty('<?= $key ?>', -1)">-</button>
+                        <input type="text" id="input-<?= $key ?>" value="<?= $item['qty'] ?>" readonly>
+                        <button type="button" onclick="changeQty('<?= $key ?>', 1)">+</button>
                     </div>
                 </td>
-                <td>$<?= $item_total ?></td>
-                <td><span class="remove-item">&times;</span></td>
+                <td id="total-<?= $key ?>"><?= formatPrice($item_total) ?></td>
+                <td><span class="remove-item" onclick="removeItem('<?= $key ?>')">&times;</span></td>
             </tr>
             <?php endforeach; ?>
         </tbody>
@@ -155,7 +202,7 @@ $cart_items = [
     <div class="cart-summary">
         <div class="summary-line">
             <span>Subtotal</span>
-            <span>$<?= $subtotal ?></span>
+            <span id="summary-subtotal"><?= formatPrice($subtotal) ?></span>
         </div>
         <div class="summary-line">
             <span>Shipping</span>
@@ -163,16 +210,73 @@ $cart_items = [
         </div>
         <div class="summary-line summary-total">
             <span>Total</span>
-            <span>$<?= $subtotal ?></span>
+            <span id="summary-total"><?= formatPrice($subtotal) ?></span>
         </div>
-        <button class="checkout-btn">Proceed to Checkout</button>
+        
+        <a href="checkout-process.php" class="checkout-btn">Proceed to Checkout</a>
     </div>
+    <?php else: ?>
+        <div class="empty-cart-msg">
+            <p>Your shopping bag is empty.</p>
+            <a href="shop.php" class="btn-gold" style="margin-top: 20px;">Go To Shop</a>
+        </div>
+    <?php endif; ?>
 </div>
 
 <script>
-    function updateQty(id, change) {
-        // Yahan aap AJAX call likhenge taake page refresh kiye baghair cart update ho
-        console.log("Updating product " + id + " by " + change);
+    // Global function to process data via dynamic updates
+    function updateCartBackend(cartKey, newQty, remove = false) {
+        // Creating form data dynamically for submission
+        let formData = new FormData();
+        formData.append('cart_key', cartKey);
+        formData.append('qty', newQty);
+        if(remove) {
+            formData.append('action', 'delete');
+        } else {
+            formData.append('action', 'update');
+        }
+
+        // Fetch API request to seamlessly handle background operations
+        fetch('cart-process.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                if(remove || newQty <= 0) {
+                    document.getElementById('row-' + cartKey).remove();
+                } else {
+                    document.getElementById('total-' + cartKey).innerText = data.item_total;
+                }
+                
+                // Update global visual summary cards
+                document.getElementById('summary-subtotal').innerText = data.cart_subtotal;
+                document.getElementById('summary-total').innerText = data.cart_subtotal;
+                
+                if(data.cart_empty) {
+                    location.reload(); // Reload layout if all elements are clear
+                }
+            }
+        })
+        .catch(err => console.error("Error managing cart:", err));
+    }
+
+    function changeQty(key, change) {
+        let inputEl = document.getElementById('input-' + key);
+        let currentVal = parseInt(inputEl.value);
+        let newVal = currentVal + change;
+        
+        if (newVal >= 1) {
+            inputEl.value = newVal;
+            updateCartBackend(key, newVal);
+        }
+    }
+
+    function removeItem(key) {
+        if(confirm("Are you sure you want to remove this item?")) {
+            updateCartBackend(key, 0, true);
+        }
     }
 </script>
 

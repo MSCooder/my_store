@@ -7,9 +7,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Agar user pehle se login hai toh home par bhej dein
+// Check karein agar user kisi specific page (jaise checkout) se redirect ho kar aaya hai
+$redirect_to = isset($_GET['redirect_to']) ? $_POST['redirect_to'] : (isset($_POST['redirect_to']) ? $_POST['redirect_to'] : 'index.php');
+
+// Agar user pehle se login hai toh automatic right page par bhej dein
 if (isset($_SESSION['user_id'])) {
-    header("Location: index.php");
+    header("Location: " . $redirect_to);
     exit();
 }
 
@@ -17,7 +20,8 @@ $error = "";
 
 // 2. Login Logic
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $email = sanitize($_POST['email']);
+    // functions.php ke use se security sanitization
+    $email = isset($_POST['email']) ? trim($_POST['email']) : '';
     $password = $_POST['password'];
 
     if (!empty($email) && !empty($password)) {
@@ -32,11 +36,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_SESSION['user_name'] = $user['name'];
             $_SESSION['role'] = $user['role']; // admin ya user check karne ke liye
 
-            // Agar admin hai toh admin panel bhej dein, warna home page
+            // Cookies setting agar user ne 'Remember Me' check kiya ho
+            if (isset($_POST['remember'])) {
+                setcookie('user_email', $email, time() + (86400 * 30), "/"); // 30 Days expiry context
+            }
+
+            // Agar admin hai toh admin panel bhej dein, warna dynamically target link par bypass karein
             if ($user['role'] === 'admin') {
                 header("Location: admin/index.php");
             } else {
-                header("Location: index.php");
+                header("Location: " . $redirect_to);
             }
             exit();
         } else {
@@ -60,9 +69,10 @@ include 'includes/header.php';
         border-radius: 12px;
         overflow: hidden;
         min-height: 550px;
+        font-family: 'Poppins', sans-serif;
     }
 
-    /* Left Image Section (As per Image 5.png) */
+    /* Left Image Section */
     .login-image {
         flex: 1.1;
         background: url('https://images.unsplash.com/photo-1584302179602-e4c3d3fd629d?q=80&w=2070&auto=format&fit=crop') center/cover;
@@ -80,8 +90,8 @@ include 'includes/header.php';
     }
 
     .login-form-box h2 {
-        font-family: 'Poppins', sans-serif;
-        font-size: 26px;
+        font-family: 'Playfair Display', serif;
+        font-size: 28px;
         font-weight: 600;
         margin-bottom: 30px;
         text-transform: uppercase;
@@ -131,7 +141,7 @@ include 'includes/header.php';
     .btn-signin {
         width: 100%;
         padding: 15px;
-        background: #c4a47c; /* Premium Gold from Image 5 */
+        background: #c4a47c; /* Premium Gold theme matching Aura Jewelry */
         color: white;
         border: none;
         text-transform: uppercase;
@@ -175,31 +185,33 @@ include 'includes/header.php';
         <h2>Welcome Back</h2>
         
         <?php if($error): ?>
-            <div style="background: #fee2e2; color: #dc2626; padding: 12px; border-radius: 5px; font-size: 13px; margin-bottom: 20px; border: 1px solid #fecaca;">
-                <?= $error ?>
+            <div style="background: #fee2e2; color: #dc2626; padding: 12px; border-radius: 5px; font-size: 13px; margin-bottom: 20px; border: 1px solid #fecaca; text-align: center;">
+                <?= htmlspecialchars($error) ?>
             </div>
         <?php endif; ?>
 
         <form action="login.php" method="POST">
+            <input type="hidden" name="redirect_to" value="<?= htmlspecialchars($redirect_to) ?>">
+
             <div class="form-group">
                 <label>Email Address</label>
-                <input type="email" name="email" placeholder="Email Address" required>
+                <input type="email" name="email" value="<?= isset($_COOKIE['user_email']) ? htmlspecialchars($_COOKIE['user_email']) : '' ?>" placeholder="yourname@email.com" required>
             </div>
             
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" name="password" placeholder="Password" required>
+                <input type="password" name="password" placeholder="••••••••" required>
             </div>
 
             <label class="remember-me">
-                <input type="checkbox" name="remember"> Remember Me
+                <input type="checkbox" name="remember" <?= isset($_COOKIE['user_email']) ? 'checked' : '' ?>> Remember Me
             </label>
 
             <button type="submit" class="btn-signin">Sign In</button>
         </form>
 
         <p class="register-link">
-            Don't have an account? <a href="register.php">Register here</a>
+            Don't have an account? <a href="register.php?redirect_to=<?= urlencode($redirect_to) ?>">Register here</a>
         </p>
     </div>
 </div>

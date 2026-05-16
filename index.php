@@ -1,6 +1,5 @@
 <?php 
 require_once 'config/db.php';
-// Functions include karein taake formatPrice use kar sakein
 require_once 'includes/functions.php'; 
 include 'includes/header.php'; 
 
@@ -10,7 +9,6 @@ $featured = $stmt->fetchAll();
 ?>
 
 <style>
-    /* 1. Hero Section */
     .hero-slider {
         height: 85vh;
         background: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), 
@@ -24,7 +22,6 @@ $featured = $stmt->fetchAll();
     .btn-gold { background: #c4a47c; color: white; padding: 12px 30px; text-decoration: none; display: inline-block; font-size: 14px; letter-spacing: 1px; transition: 0.3s; }
     .btn-gold:hover { background: #1a1a1a; }
 
-    /* 2. Categories Section (Circular) */
     .cat-section { padding: 80px 5%; text-align: center; background: #fff; }
     .cat-container { display: flex; justify-content: center; gap: 50px; flex-wrap: wrap; margin-top: 40px; }
     .cat-item { text-decoration: none; color: #1a1a1a; }
@@ -33,22 +30,20 @@ $featured = $stmt->fetchAll();
     .cat-item:hover .cat-circle { border-color: #c4a47c; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
     .cat-item p { font-weight: 500; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
 
-    /* 3. New Arrivals Section */
     .arrivals-section { padding: 60px 8%; background: #fdfdfb; text-align: center; }
     .section-title { font-family: 'Playfair Display', serif; font-size: 32px; margin-bottom: 40px; text-transform: uppercase; letter-spacing: 2px; }
     .product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; }
     .p-card { background: white; padding: 15px; text-align: center; transition: 0.3s; border: 1px solid #f1f1f1; }
     .p-card:hover { box-shadow: 0 15px 30px rgba(0,0,0,0.05); }
     .p-img { width: 100%; height: 280px; object-fit: cover; background: #f9f9f9; margin-bottom: 15px; }
-    .p-card h4 { font-size: 16px; margin-bottom: 8px; color: #333; }
+    .p-card h4 { font-size: 16px; margin-bottom: 8px; color: #333; height: 40px; overflow: hidden; }
     .p-card .price { color: #1a1a1a; font-weight: 600; margin-bottom: 15px; display: block; }
 
-    /* 4. About & Contact Sections */
     .about-section { padding: 100px 10%; display: flex; align-items: center; gap: 50px; background: #fff; }
     .about-img { flex: 1; height: 400px; background: url('https://images.unsplash.com/photo-1573408301185-9146fe634ad0?q=80&w=2000&auto=format&fit=crop') center/cover; }
     .about-text { flex: 1; }
     
-    .contact-section { padding: 80px 10%; background: #f9f9f7; text-align: center; }
+    .contact-section { padding: 20px 10%; background: #f9f9f7; text-align: center; }
     .contact-container { max-width: 600px; margin: 40px auto 0; }
     .contact-container input, .contact-container textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; outline: none; }
     .contact-container input:focus { border-color: #c4a47c; }
@@ -69,7 +64,7 @@ $featured = $stmt->fetchAll();
 <section class="cat-section">
     <div class="cat-container">
         <a href="shop.php?cat=rings" class="cat-item">
-            <div class="cat-circle"><img src="https://cdn-icons-png.flaticon.com/512/3258/3258500.png" alt="Rings"></div>
+            <div class="cat-circle"><img src="https://cdn-icons-png.flaticon.com/512/3258/325844.com/512/3258/3258500.png" alt="Rings"></div>
             <p>Rings</p>
         </a>
         <a href="shop.php?cat=necklaces" class="cat-item">
@@ -90,14 +85,23 @@ $featured = $stmt->fetchAll();
 <section class="arrivals-section">
     <h3 class="section-title">New Arrivals</h3>
     <div class="product-grid">
-        <?php foreach($featured as $p): ?>
-        <div class="p-card">
-            <img src="assets/images/products/<?= $p['image_url'] ?>" class="p-img" onerror="this.src='https://via.placeholder.com/300x350?text=Jewelry'">
-            <h4><?= $p['title'] ?></h4>
-            <span class="price"><?= formatPrice($p['price']) ?></span>
-            <a href="products-detail.php?id=<?= $p['id'] ?>" class="btn-gold" style="padding: 8px 20px;">View Details</a>
-        </div>
-        <?php endforeach; ?>
+        <?php if(!empty($featured)): ?>
+            <?php foreach($featured as $p): ?>
+            <div class="p-card">
+                <?php 
+                    // Dynamic Database Fallbacks (Check array key types safely)
+                    $img_path = isset($p['image']) ? $p['image'] : (isset($p['image_url']) ? $p['image_url'] : '');
+                    $prod_name = isset($p['name']) ? $p['name'] : (isset($p['title']) ? $p['title'] : 'Jewelry Item');
+                ?>
+                <img src="<?= htmlspecialchars($img_path) ?>" class="p-img" onerror="this.src=''">
+                <h4><?= htmlspecialchars($prod_name) ?></h4>
+                <span class="price"><?= isset($p['price']) ? formatPrice($p['price']) : '$0.00' ?></span>
+                <a href="products-detail.php?id=<?= $p['id'] ?>" class="btn-gold" style="padding: 8px 20px;">View Details</a>
+            </div>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <p style="grid-column: 1/-1; color: #666;">No products found. Please add from Admin Panel.</p>
+        <?php endif; ?>
     </div>
 </section>
 

@@ -12,7 +12,7 @@
         color: #1a1a1a;
         font-family: 'Poppins', sans-serif;
         border-top: 1px solid #eeeeee;
-        margin-top: 60px;
+        padding-top: 60px;
     }
 
     .footer-wrapper {

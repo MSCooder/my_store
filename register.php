@@ -3,9 +3,16 @@
 require_once 'config/db.php';
 require_once 'includes/functions.php';
 
-// Agar user pehle se login hai toh home par bhej dein
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Check karein agar user kisi authentication bypass chain se aaya hai
+$redirect_to = isset($_GET['redirect_to']) ? $_POST['redirect_to'] : (isset($_POST['redirect_to']) ? $_POST['redirect_to'] : 'index.php');
+
+// Agar user pehle se login hai toh automatic target page par bhej dein
 if (isset($_SESSION['user_id'])) {
-    header("Location: index.php");
+    header("Location: " . $redirect_to);
     exit();
 }
 
@@ -14,8 +21,9 @@ $success = "";
 
 // 2. Registration Logic
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $full_name = sanitize($_POST['full_name']);
-    $email = sanitize($_POST['email']);
+    // Check if sanitation helper matches global layout hooks
+    $full_name = isset($_POST['full_name']) ? trim($_POST['full_name']) : '';
+    $email = isset($_POST['email']) ? trim($_POST['email']) : '';
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
 
@@ -27,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } elseif (strlen($password) < 6) {
         $error = "Password must be at least 6 characters.";
     } else {
-        // Check karein ke email pehle se toh nahi
+        // Check karein ke email pehle se toh nahi registered
         $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
         $stmt->execute([$email]);
         if ($stmt->rowCount() > 0) {
@@ -39,7 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             try {
                 $stmt = $pdo->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'user')");
                 $stmt->execute([$full_name, $email, $hashed_pw]);
-                $success = "Registration successful! You can now login.";
+                $success = "Registration successful! Redirecting to login...";
+                
+                // Secure dynamic route propagation on successful insert
+                header("Refresh: 2; URL=login.php?redirect_to=" . urlencode($redirect_to));
             } catch (PDOException $e) {
                 $error = "Something went wrong. Please try again.";
             }
@@ -60,9 +71,10 @@ include 'includes/header.php';
         border-radius: 15px;
         overflow: hidden;
         min-height: 600px;
+        font-family: 'Poppins', sans-serif;
     }
 
-    /* Left Image Section (Matches Image 6.png) */
+    /* Left Image Section matching Aura Jewelry aesthetics */
     .auth-side-img {
         flex: 1.2;
         background: url('https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?q=80&w=2070&auto=format&fit=crop') center/cover;
@@ -80,7 +92,7 @@ include 'includes/header.php';
     }
 
     .auth-form-container h2 {
-        font-family: 'Poppins', sans-serif;
+        font-family: 'Playfair Display', serif;
         font-size: 28px;
         font-weight: 600;
         margin-bottom: 35px;
@@ -112,12 +124,13 @@ include 'includes/header.php';
     .form-control:focus {
         border-color: #c4a47c;
         background-color: #fdfbf8;
+        box-shadow: 0 0 5px rgba(196, 164, 124, 0.15);
     }
 
     .btn-register {
         width: 100%;
         padding: 16px;
-        background: #c4a47c; /* Gold theme from Image 6 */
+        background: #c4a47c; /* Luxury Gold Palette */
         color: white;
         border: none;
         border-radius: 4px;
@@ -149,7 +162,7 @@ include 'includes/header.php';
     }
 
     /* Alerts */
-    .alert { padding: 12px; border-radius: 5px; font-size: 13px; margin-bottom: 20px; }
+    .alert { padding: 12px; border-radius: 5px; font-size: 13px; margin-bottom: 20px; text-align: center; }
     .alert-danger { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
     .alert-success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
 
@@ -166,31 +179,33 @@ include 'includes/header.php';
         <h2>Create Account</h2>
 
         <?php if($error): ?>
-            <div class="alert alert-danger"><?= $error ?></div>
+            <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
 
         <?php if($success): ?>
-            <div class="alert alert-success"><?= $success ?></div>
+            <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
         <?php endif; ?>
 
         <form action="register.php" method="POST">
+            <input type="hidden" name="redirect_to" value="<?= htmlspecialchars($redirect_to) ?>">
+
             <span class="form-label">Full Name</span>
-            <input type="text" name="full_name" class="form-control" placeholder="Full Name" required>
+            <input type="text" name="full_name" class="form-control" placeholder="Enter full name" required>
 
             <span class="form-label">Email Address</span>
-            <input type="email" name="email" class="form-control" placeholder="Email Address" required>
+            <input type="email" name="email" class="form-control" placeholder="name@email.com" required>
 
             <span class="form-label">Password</span>
-            <input type="password" name="password" class="form-control" placeholder="Password" required>
+            <input type="password" name="password" class="form-control" placeholder="Minimum 6 characters" required>
 
             <span class="form-label">Confirm Password</span>
-            <input type="password" name="confirm_password" class="form-control" placeholder="Confirm Password" required>
+            <input type="password" name="confirm_password" class="form-control" placeholder="Repeat your password" required>
 
             <button type="submit" class="btn-register">Register</button>
         </form>
 
         <p class="auth-footer">
-            Already have an account? <a href="login.php">Login here</a>
+            Already have an account? <a href="login.php?redirect_to=<?= urlencode($redirect_to) ?>">Login here</a>
         </p>
     </div>
 </div>
