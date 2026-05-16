@@ -16,8 +16,9 @@ $sql = "SELECT * FROM products WHERE 1=1";
 $params = [];
 
 if (!empty($category)) {
-    $sql .= " AND category = ?";
-    $params[] = $category;
+    // ULTIMATE FIX: '=' ki jagah LIKE aur '%' lagane se agar data ke sath space ya plural/singular ka farq hua toh bhi chal jayega!
+    $sql .= " AND LOWER(category) LIKE LOWER(?)";
+    $params[] = "%" . $category . "%";
 }
 
 if (!empty($search)) {
@@ -27,11 +28,13 @@ if (!empty($search)) {
     $params[] = "%$search%";
 }
 
-$sql .= " ORDER BY id DESC"; // Newest pieces first
+$sql .= " ORDER BY id DESC";
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $products = $stmt->fetchAll();
+// Temporary Check: Pata lagane ke liye ke DB mein asal mein kya categories hain
+
 ?>
 
 <style>
@@ -209,21 +212,24 @@ $products = $stmt->fetchAll();
             <a href="shop.php?category=Earrings" class="tab-link <?= $category === 'Earrings' ? 'active' : '' ?>">Earrings</a>
         </div>
 
-        <form action="shop.php" method="GET" class="search-box-form">
+        <!-- <form action="shop.php" method="GET" class="search-box-form">
             <?php if(!empty($category)): ?>
                 <input type="hidden" name="category" value="<?= htmlspecialchars($category) ?>">
             <?php endif; ?>
             <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Search jewelry...">
             <button type="submit">&#x1F50D;</button>
-        </form>
+        </form> -->
     </div>
 
     <div class="shop-grid">
         <?php if (!empty($products)): ?>
             <?php foreach ($products as $product): 
                 // Flexible keys checks to sync fallback mechanics safely
-                $img_path = isset($product['image']) ? $product['image'] : (isset($product['image_url']) ? $product['image_url'] : '');
+                $img_name = isset($product['image']) ? $product['image'] : (isset($product['image_url']) ? $product['image_url'] : '');
                 $title_text = isset($product['name']) ? $product['name'] : (isset($product['title']) ? $product['title'] : 'Fine Jewelry');
+                
+                // ROUTING CORRECTION: Safe asset folder directory structure
+                $img_path = "asserts/images/" . $img_name;
             ?>
                 <div class="product-card">
                     <div class="img-wrap">
@@ -233,7 +239,7 @@ $products = $stmt->fetchAll();
                         <h3><?= htmlspecialchars($title_text) ?></h3>
                         <div class="product-price"><?= formatPrice($product['price']) ?></div>
                         
-                        <a href="product_details.php?id=<?= $product['id'] ?>" class="btn-view-details">View Details</a>
+                        <a href="products-detail.php?id=<?= $product['id'] ?>" class="btn-view-details">View Details</a>
                     </div>
                 </div>
             <?php endforeach; ?>

@@ -86,7 +86,7 @@ $subtotal = 0;
     .p-info img { width: 80px; height: 80px; object-fit: cover; background: #f9f9f9; border-radius: 4px; }
     .p-meta { font-size: 11px; color: #888; display: block; text-transform: uppercase; margin-top: 3px; }
     
-    /* Quantity Box Setup matching mockup 7.png */
+    /* Quantity Box Setup */
     .qty-box {
         display: flex;
         align-items: center;
@@ -153,6 +153,64 @@ $subtotal = 0;
     .remove-item:hover { color: #d9534f; }
     
     .empty-cart-msg { text-align: center; padding: 40px 0; color: #666; }
+
+    /* ULTRA MOBILE-RESPONSIVE MEDIA QUERY */
+    @media (max-width: 768px) {
+        .cart-title { font-size: 22px; margin-bottom: 25px; }
+        
+        /* Hide traditional table structures */
+        .cart-table, .cart-table society, .cart-table tr, .cart-table td, .cart-table th {
+            display: block;
+            width: 100%;
+        }
+        .cart-table thead { display: none; } /* Hide headers */
+
+        .cart-table tr {
+            margin-bottom: 20px;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 10px 15px;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            position: relative;
+        }
+
+        .cart-table td {
+            text-align: right;
+            padding: 12px 10px;
+            border-bottom: 1px solid #f5f5f5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cart-table td:last-child { border-bottom: none; }
+
+        /* Dynamic headers conversion */
+        .cart-table td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            color: #888;
+            letter-spacing: 0.5px;
+        }
+
+        /* Adjustments for info area */
+        .cart-table td[data-label="Product Details"] {
+            display: block;
+            text-align: left;
+            padding-top: 15px;
+        }
+        .cart-table td[data-label="Product Details"]::before {
+            display: block;
+            margin-bottom: 10px;
+        }
+        .p-info { width: 100%; }
+
+        .qty-box { margin-left: auto; }
+        .cart-summary { max-width: 100%; margin-top: 30px; }
+    }
 </style>
 
 <div class="cart-wrapper">
@@ -175,25 +233,25 @@ $subtotal = 0;
                 $subtotal += $item_total;
             ?>
             <tr id="row-<?= $key ?>">
-                <td>
+                <td data-label="Product Details">
                     <div class="p-info">
-                        <img src="<?= htmlspecialchars($item['image']) ?>" onerror="this.src='https://via.placeholder.com/80?text=Jewelry'" alt="<?= htmlspecialchars($item['name']) ?>">
+                        <img src="asserts/images/<?= htmlspecialchars($item['image']) ?>" onerror="this.src='https://via.placeholder.com/80?text=Jewelry'" alt="<?= htmlspecialchars($item['name']) ?>">
                         <div>
                             <strong><?= htmlspecialchars($item['name']) ?></strong>
                             <span class="p-meta">Metal: <?= htmlspecialchars($item['metal']) ?></span>
                         </div>
                     </div>
                 </td>
-                <td><?= formatPrice($item['price']) ?></td>
-                <td>
+                <td data-label="Price"><?= formatPrice($item['price']) ?></td>
+                <td data-label="Quantity">
                     <div class="qty-box">
                         <button type="button" onclick="changeQty('<?= $key ?>', -1)">-</button>
                         <input type="text" id="input-<?= $key ?>" value="<?= $item['qty'] ?>" readonly>
                         <button type="button" onclick="changeQty('<?= $key ?>', 1)">+</button>
                     </div>
                 </td>
-                <td id="total-<?= $key ?>"><?= formatPrice($item_total) ?></td>
-                <td><span class="remove-item" onclick="removeItem('<?= $key ?>')">&times;</span></td>
+                <td data-label="Total" id="total-<?= $key ?>"><?= formatPrice($item_total) ?></td>
+                <td data-label="Remove"><span class="remove-item" onclick="removeItem('<?= $key ?>')">&times;</span></td>
             </tr>
             <?php endforeach; ?>
         </tbody>
@@ -224,9 +282,7 @@ $subtotal = 0;
 </div>
 
 <script>
-    // Global function to process data via dynamic updates
     function updateCartBackend(cartKey, newQty, remove = false) {
-        // Creating form data dynamically for submission
         let formData = new FormData();
         formData.append('cart_key', cartKey);
         formData.append('qty', newQty);
@@ -236,7 +292,6 @@ $subtotal = 0;
             formData.append('action', 'update');
         }
 
-        // Fetch API request to seamlessly handle background operations
         fetch('cart-process.php', {
             method: 'POST',
             body: formData
@@ -250,12 +305,11 @@ $subtotal = 0;
                     document.getElementById('total-' + cartKey).innerText = data.item_total;
                 }
                 
-                // Update global visual summary cards
                 document.getElementById('summary-subtotal').innerText = data.cart_subtotal;
                 document.getElementById('summary-total').innerText = data.cart_subtotal;
                 
                 if(data.cart_empty) {
-                    location.reload(); // Reload layout if all elements are clear
+                    location.reload();
                 }
             }
         })

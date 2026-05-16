@@ -4,7 +4,7 @@ require_once 'includes/functions.php';
 include 'includes/header.php'; 
 
 // Database se latest products fetch karein
-$stmt = $pdo->query("SELECT * FROM products ORDER BY id DESC LIMIT 4");
+$stmt = $pdo->query("SELECT * FROM products ORDER BY id DESC LIMIT 12");
 $featured = $stmt->fetchAll();
 ?>
 
@@ -25,7 +25,7 @@ $featured = $stmt->fetchAll();
     .cat-section { padding: 80px 5%; text-align: center; background: #fff; }
     .cat-container { display: flex; justify-content: center; gap: 50px; flex-wrap: wrap; margin-top: 40px; }
     .cat-item { text-decoration: none; color: #1a1a1a; }
-    .cat-circle { width: 150px; height: 150px; border-radius: 50%; background: #f9f9f7; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; overflow: hidden; transition: 0.3s; border: 1px solid #eee; }
+    .cat-circle { width: 150px; height: 150px; border-radius: 20%; background: #f9f9f7; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; overflow: hidden; transition: 0.3s; border: 1px solid #eee; }
     .cat-circle img { width: 70%; transition: 0.3s; }
     .cat-item:hover .cat-circle { border-color: #c4a47c; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
     .cat-item p { font-weight: 500; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
@@ -43,8 +43,8 @@ $featured = $stmt->fetchAll();
     .about-img { flex: 1; height: 400px; background: url('https://images.unsplash.com/photo-1573408301185-9146fe634ad0?q=80&w=2000&auto=format&fit=crop') center/cover; }
     .about-text { flex: 1; }
     
-    .contact-section { padding: 20px 10%; background: #f9f9f7; text-align: center; }
-    .contact-container { max-width: 600px; margin: 40px auto 0; }
+    .contact-section { padding: 90px 10%; background: #f9f9f7; text-align: center; }
+    .contact-container { max-width: 600px; margin: 50px auto 0; }
     .contact-container input, .contact-container textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; outline: none; }
     .contact-container input:focus { border-color: #c4a47c; }
 
@@ -64,19 +64,19 @@ $featured = $stmt->fetchAll();
 <section class="cat-section">
     <div class="cat-container">
         <a href="shop.php?cat=rings" class="cat-item">
-            <div class="cat-circle"><img src="https://cdn-icons-png.flaticon.com/512/3258/325844.com/512/3258/3258500.png" alt="Rings"></div>
+            <div class="cat-circle"><img src="asserts/images/image1.png" alt="Rings"></div>
             <p>Rings</p>
         </a>
         <a href="shop.php?cat=necklaces" class="cat-item">
-            <div class="cat-circle"><img src="https://cdn-icons-png.flaticon.com/512/3258/3258474.png" alt="Necklaces"></div>
+            <div class="cat-circle"><img src="asserts/images/image2.png" alt="Necklaces"></div>
             <p>Necklaces</p>
         </a>
         <a href="shop.php?cat=earrings" class="cat-item">
-            <div class="cat-circle"><img src="https://cdn-icons-png.flaticon.com/512/3258/3258447.png" alt="Earrings"></div>
+            <div class="cat-circle"><img src="asserts/images/image3.png" alt="Earrings"></div>
             <p>Earrings</p>
         </a>
         <a href="shop.php?cat=bracelets" class="cat-item">
-            <div class="cat-circle"><img src="https://cdn-icons-png.flaticon.com/512/3258/3258428.png" alt="Bracelets"></div>
+            <div class="cat-circle"><img src="asserts/images/image1.png" alt="Bracelets"></div>
             <p>Bracelets</p>
         </a>
     </div>
@@ -84,16 +84,34 @@ $featured = $stmt->fetchAll();
 
 <section class="arrivals-section">
     <h3 class="section-title">New Arrivals</h3>
-    <div class="product-grid">
+   <div class="product-grid">
         <?php if(!empty($featured)): ?>
             <?php foreach($featured as $p): ?>
             <div class="p-card">
                 <?php 
-                    // Dynamic Database Fallbacks (Check array key types safely)
-                    $img_path = isset($p['image']) ? $p['image'] : (isset($p['image_url']) ? $p['image_url'] : '');
-                    $prod_name = isset($p['name']) ? $p['name'] : (isset($p['title']) ? $p['title'] : 'Jewelry Item');
+                    // 1. Column Fallback Checks (Title vs Name mapping)
+                    $prod_name = 'Luxury Jewelry';
+                    if (isset($p['title'])) {
+                        $prod_name = $p['title'];
+                    } elseif (isset($p['name'])) {
+                        $prod_name = $p['name'];
+                    }
+
+                    // 2. Image Path Alignment Framework
+                    $db_image = isset($p['image']) ? $p['image'] : (isset($p['image_url']) ? $p['image_url'] : '');
+                    
+                    // Aapke folder ka naam 'asserts' hai (with single 'r'), isiliye direct prefix lagayein
+                    $final_image_src = "asserts/images/" . $db_image;
                 ?>
-                <img src="<?= htmlspecialchars($img_path) ?>" class="p-img" onerror="this.src=''">
+                
+                <div style="width: 100%; height: 280px; overflow: hidden; background: #fafafa; margin-bottom: 15px;">
+                    <img src="<?= htmlspecialchars($final_image_src) ?>" 
+                         class="p-img" 
+                         style="width: 100%; height: 100%; object-fit: cover;"
+                         onerror="this.src='https://via.placeholder.com/400x450?text=Aura+Jewelry'" 
+                         alt="<?= htmlspecialchars($prod_name) ?>">
+                </div>
+
                 <h4><?= htmlspecialchars($prod_name) ?></h4>
                 <span class="price"><?= isset($p['price']) ? formatPrice($p['price']) : '$0.00' ?></span>
                 <a href="products-detail.php?id=<?= $p['id'] ?>" class="btn-gold" style="padding: 8px 20px;">View Details</a>

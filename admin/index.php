@@ -1,188 +1,103 @@
-<?php
-// 1. Database connection include karein
-require_once 'config/db.php';
+<?php 
+include 'includes/header.php'; 
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+// Real-Time Analytics Counter Calculations
+try {
+    // 1. Total Orders count
+    $totalOrders = $pdo->query("SELECT COUNT(*) FROM orders")->fetchColumn();
+    
+    // 2. Out of stock jewelry check
+    $outOfStock = $pdo->query("SELECT COUNT(*) FROM products WHERE stock_quantity <= 0")->fetchColumn();
+    
+    // 3. Low stock warning array mapping (products having stock less than 5)
+    $lowStockStmt = $pdo->query("SELECT id, name, stock_quantity FROM products WHERE stock_quantity > 0 AND stock_quantity <= 5");
+    $lowStockItems = $lowStockStmt->fetchAll();
+    
+} catch (PDOException $e) {
+    echo "Dashboard Error: " . $e->getMessage();
 }
-
-// Security Check: Sirf authenticated Admin hi is page ko access kar sake
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-    header("Location: login.php?msg=admin_only");
-    exit();
-}
-
-$msg = "";
-$msg_class = "";
-
-// 2. Form Submit hone par Product Add karne ka Logic
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $p_name = trim($_POST['product_name']);
-    $p_price = trim($_POST['product_price']);
-    $p_desc = trim($_POST['product_description']);
-    
-    // IMAGE UPLOAD PATH FIX: Aapke folder structure ke mutabiq 'asserts/images/' use hoga
-    $target_dir = "asserts/images/"; 
-    $image_name = basename($_FILES["product_image"]["name"]);
-    
-    // Extension check karne ke liye
-    $imageFileType = strtolower(pathinfo($image_name, PATHINFO_EXTENSION));
-    
-    // File ka unique naam banayein taake same naam ki images overwrite na hon
-    $new_image_name = time() . "_" . uniqid() . "." . $imageFileType;
-    $target_file = $target_dir . $new_image_name;
-    
-    $uploadOk = 1;
-
-    // Check karein ke file real image hai ya nahi
-    if (!empty($_FILES["product_image"]["tmp_name"])) {
-        $check = getimagesize($_FILES["product_image"]["tmp_name"]);
-        if($check === false) {
-            $msg = "File is not a valid image.";
-            $msg_class = "error";
-            $uploadOk = 0;
-        }
-    } else {
-        $msg = "Please select an image.";
-        $msg_class = "error";
-        $uploadOk = 0;
-    }
-
-    // Sirf specific formats allow karein (jpg, jpeg, png, webp)
-    if($imageFileType != "jpg" && $imageFileType != "png" && $imageFileType != "jpeg" && $imageFileType != "webp" ) {
-        $msg = "Only JPG, JPEG, PNG & WEBP formats are allowed.";
-        $msg_class = "error";
-        $uploadOk = 0;
-    }
-
-    // Agar sab valid hai toh file move karein aur DB mein save karein
-    if ($uploadOk == 1) {
-        if (move_uploaded_file($_FILES["product_image"]["tmp_name"], $target_file)) {
-            try {
-                // Database query (Hone page par display karne ke liye target_file path save hoga)
-                $stmt = $pdo->prepare("INSERT INTO products (name, price, description, image) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$p_name, $p_price, $p_desc, $target_file]);
-                
-                $msg = "Product added successfully! Check your Home Page.";
-                $msg_class = "success";
-            } catch (PDOException $e) {
-                $msg = "Database Error: " . $e->getMessage();
-                $msg_class = "error";
-            }
-        } else {
-            $msg = "Error uploading your file. Check folder permissions.";
-            $msg_class = "error";
-        }
-    }
-}
-
-// Header include karein
-include 'includes/header.php';
 ?>
 
-<style>
-    .admin-container {
-        max-width: 600px;
-        margin: 50px auto;
-        background: #fff;
-        padding: 40px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        border-radius: 8px;
-        font-family: 'Poppins', sans-serif;
-    }
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 style="font-family: 'Playfair Display', serif; font-weight: 700;">Operational Overview</h2>
+        <span class="badge bg-dark p-2">Live Store Status</span>
+    </div>
 
-    .admin-container h2 {
-        font-family: 'Playfair Display', serif;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 30px;
-        color: #1a1a1a;
-        text-align: center;
-    }
-
-    .form-group {
-        margin-bottom: 20px;
-    }
-
-    .form-group label {
-        display: block;
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-        margin-bottom: 8px;
-        color: #333;
-    }
-
-    .form-group input[type="text"],
-    .form-group input[type="number"],
-    .form-group textarea {
-        width: 100%;
-        padding: 12px 15px;
-        border: 1px solid #e5e5e5;
-        border-radius: 4px;
-        outline: none;
-        font-size: 14px;
-        font-family: 'Poppins', sans-serif;
-    }
-
-    .form-group input:focus, .form-group textarea:focus {
-        border-color: #c4a47c;
-    }
-
-    .btn-submit {
-        width: 100%;
-        padding: 14px;
-        background: #c4a47c; /* Gold theme */
-        color: white;
-        border: none;
-        text-transform: uppercase;
-        font-weight: 600;
-        letter-spacing: 1px;
-        cursor: pointer;
-        border-radius: 4px;
-        transition: 0.3s;
-    }
-
-    .btn-submit:hover {
-        background: #1a1a1a;
-    }
-
-    /* Alerts */
-    .alert { padding: 12px; border-radius: 4px; font-size: 14px; margin-bottom: 20px; text-align: center; }
-    .alert-success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-    .alert-error { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
-</style>
-
-<div class="admin-container">
-    <h2>Add New Product</h2>
-
-    <?php if($msg): ?>
-        <div class="alert alert-<?= $msg_class ?>"><?= $msg ?></div>
-    <?php endif; ?>
-
-    <form action="admin.php" method="POST" enctype="multipart/form-data">
-        <div class="form-group">
-            <label>Product Name</label>
-            <input type="text" name="product_name" placeholder="e.g., Solstice Gold Ring" required>
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card card-premium p-4 bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted text-uppercase small">Total Orders Logged</h6>
+                        <h3 class="fw-bold m-0"><?= $totalOrders ?></h3>
+                    </div>
+                    <div class="bg-light p-3 rounded-circle text-primary"><i class="fa-solid fa-bag-shopping fa-xl"></i></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card card-premium p-4 bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted text-uppercase small">Out of Stock Pieces</h6>
+                        <h3 class="fw-bold m-0 text-danger"><?= $outOfStock ?></h3>
+                    </div>
+                    <div class="bg-light p-3 rounded-circle text-danger"><i class="fa-solid fa-triangle-exclamation fa-xl"></i></div>
+                </div>
+            </div>
         </div>
 
-        <div class="form-group">
-            <label>Price ($)</label>
-            <input type="number" name="product_price" placeholder="e.g., 350" required>
+        <div class="col-md-4">
+            <div class="card card-premium p-4 bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted text-uppercase small">Active System Managers</h6>
+                        <h3 class="fw-bold m-0 text-success">1</h3>
+                    </div>
+                    <div class="bg-light p-3 rounded-circle text-success"><i class="fa-solid fa-user-shield fa-xl"></i></div>
+                </div>
+            </div>
         </div>
+    </div>
 
-        <div class="form-group">
-            <label>Description</label>
-            <textarea name="product_description" rows="4" placeholder="Enter jewelry details..." required></textarea>
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card card-premium p-4 bg-white">
+                <h5 class="fw-bold mb-3 text-warning"><i class="fa-solid fa-warehouse me-2"></i> Critical Inventory Warning (Low Stock)</h5>
+                
+                <?php if (!empty($lowStockItems)): ?>
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product ID</th>
+                                    <th>Jewelry Name</th>
+                                    <th>Remaining Stock</th>
+                                    <th>Status Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($lowStockItems as $item): ?>
+                                    <tr>
+                                        <td>#PROD-<?= $item['id'] ?></td>
+                                        <td><strong><?= htmlspecialchars($item['name']) ?></strong></td>
+                                        <td><span class="badge badge-low-stock"><?= $item['stock_quantity'] ?> left</span></td>
+                                        <td><a href="manage-products.php?edit=<?= $item['id'] ?>" class="btn btn-sm btn-dark">Refill Inventory</a></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php else: ?>
+                    <div class="p-3 bg-light rounded text-muted text-center">
+                        <i class="fa-solid fa-circle-check text-success me-2"></i> All jewelry item inventories are perfectly stocked above critical thresholds.
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
-
-        <div class="form-group">
-            <label>Product Image</label>
-            <input type="file" name="product_image" accept="image/*" required>
-        </div>
-
-        <button type="submit" class="btn-submit">Upload Product</button>
-    </form>
+    </div>
 </div>
 
 <?php include 'includes/footer.php'; ?>

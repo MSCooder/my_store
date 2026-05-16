@@ -148,22 +148,25 @@ if (isset($_GET['id'])) {
     <div class="product-gallery">
         <div class="main-img-box">
             <?php 
-                // Fallback architecture for keys
-                $img_src = isset($product['image']) ? $product['image'] : (isset($product['image_url']) ? $product['image_url'] : '');
-                $prod_title = isset($product['name']) ? $product['name'] : (isset($product['title']) ? $product['title'] : 'Fine Jewelry');
+                // Fallback architecture for keys matching standard columns
+                $db_image = isset($product['image']) ? $product['image'] : '';
+                $prod_title = isset($product['name']) ? $product['name'] : 'Fine Jewelry Piece';
+                
+                // CRITICAL FIX: Image Folder Path Prefix Integration
+                $final_img_src = "asserts/images/" . $db_image;
             ?>
-            <img src="<?= htmlspecialchars($img_src) ?>" id="mainImage" onerror="this.src='https://via.placeholder.com/600x600?text=Jewelry'">
+            <img src="<?= htmlspecialchars($final_img_src) ?>" id="mainImage" onerror="this.src='https://via.placeholder.com/600x600?text=Aura+Jewelry'">
         </div>
-        <div class="thumb-row">
-            <div class="thumb"><img src="<?= htmlspecialchars($img_src) ?>" onclick="changeImg(this.src)"></div>
+        <!-- <div class="thumb-row">
+            <div class="thumb"><img src="<?= htmlspecialchars($final_img_src) ?>" onclick="changeImg(this.src)"></div>
             <div class="thumb"><img src="https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?auto=format&fit=crop&w=200" onclick="changeImg(this.src)"></div>
             <div class="thumb"><img src="https://images.unsplash.com/photo-1598560912015-f3776e033967?auto=format&fit=crop&w=200" onclick="changeImg(this.src)"></div>
-        </div>
+        </div> -->
     </div>
 
     <div class="product-details-info">
         <h1><?= htmlspecialchars($prod_title) ?></h1>
-        <div class="price-tag"><?= formatPrice($product['price']) ?></div>
+        <div class="price-tag"><?= isset($product['price']) ? formatPrice($product['price']) : '$0.00' ?></div>
         
         <div class="rating">
             <span style="color: #c4a47c;">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
@@ -185,9 +188,9 @@ if (isset($_GET['id'])) {
         <div class="option-group">
             <span class="option-label">Quantity</span>
             <div class="qty-selector">
-                <button class="qty-btn" onclick="updateQty(-1)">-</button>
+                <button class="qty-btn" type="button" onclick="updateQty(-1)">-</button>
                 <input type="text" value="1" id="qty" class="qty-input" readonly>
-                <button class="qty-btn" onclick="updateQty(1)">+</button>
+                <button class="qty-btn" type="button" onclick="updateQty(1)">+</button>
             </div>
         </div>
 
@@ -196,7 +199,8 @@ if (isset($_GET['id'])) {
             <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
             <input type="hidden" name="quantity" id="form-qty" value="1">
             <input type="hidden" name="metal" id="form-metal" value="Gold">
-            <button type="submit" class="add-to-cart-btn"> <a href="index.php">Add to Cart</a> </button>
+            
+            <button type="submit" class="add-to-cart-btn">Add to Cart</button>
         </form>
     </div>
 </div>

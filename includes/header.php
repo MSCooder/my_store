@@ -173,7 +173,7 @@ if (isset($_SESSION['cart'])) {
     <div class="logo">
         <a href="index.php">
             <h1>Aura</h1>
-            <span>Jewelry</span>
+            <span>Jewellers</span>
         </a>
     </div>
 
@@ -181,22 +181,22 @@ if (isset($_SESSION['cart'])) {
         <ul class="nav-links">
             <li><a href="index.php">Home</a></li>
             <li><a href="shop.php">Shop</a></li>
-            <li><a href="about">About</a></li>
-            <li><a href="contact.php">Contact</a></li>
+            <li><a href="index.php/#about">About</a></li>
+            <li><a href="index.php/#contact">Contact</a></li>
         </ul>
     </nav>
 
     <div class="header-icons">
         
         <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
-            <a href="admin/index.php" class="admin-direct-link" title="Go to Control Panel">
+            <a href="admin.php" class="admin-direct-link" title="Go to Control Panel">
                 <i class="fa-solid fa-sliders"></i>
                 <span class="admin-text">Admin</span>
             </a>
         <?php endif; ?>
 
           <ul class="nav-links">
-            <li class="admin"><a href="admin/index.php">Admin</a></li>
+            <li class="admin"><a href="admin.php">Admin</a></li>
         </ul>
 
         <div class="user-menu">

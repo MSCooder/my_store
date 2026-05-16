@@ -100,4 +100,28 @@ function getCartTotal($pdo) {
     }
     return $total;
 }
+
+/**
+ * Check karein ke kya user logged in hai aur admin role rakhta hai
+ */
+// function isAdmin() {
+//     return (isset($_SESSION['user_id']) && isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin');
+// }
+
+/**
+ * Admin pages ko secure karne ke liye gatekeeper function
+ */
+function checkAdminAccess() {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    if (!isAdmin()) {
+        // Agar admin nahi hai toh direct shop page ya main index par bhej dein
+        header("Location: ../shop.php");
+        exit();
+    }
+}
 ?>
+
+
